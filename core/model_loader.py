@@ -1,27 +1,43 @@
-import xgboost as xgb
 import pickle
-import numpy as np
+import json
+import os
+
+# Load XGBoost booster JSON helper
+def load_xgb_json(path):
+    import xgboost as xgb
+    booster = xgb.Booster()
+    booster.load_model(path)
+    return booster
+
 
 def load_models():
-    # load classifier (sklearn wrapper)
-    clf_spike = xgb.XGBClassifier()
-    clf_spike.load_model("models/clf_spike.json")
+    """
+    Loads:
+    - XGBoost classifier (spike detector)
+    - XGBoost regressors (normal + spike)
+    - Feature list
+    - Label encoders (product + store)
+    """
+    # ---- Load classifier ----
+    with open("models/clf_spike.pkl", "rb") as f:
+        clf_spike = pickle.load(f)         # Do NOT set classes_ manually
 
-    # When loading JSON, sklearn-wrapper metadata may be missing.
-    # For a binary spike detector, set these manually:
-    clf_spike.n_classes_ = 2
-    clf_spike.classes_ = np.array([0, 1])
+    # ---- Load XGBoost regressors ----
+    with open("models/model_normal.pkl", "rb") as f:
+        model_normal = pickle.load(f)
 
-    # load regressors
-    model_normal = xgb.XGBRegressor()
-    model_normal.load_model("models/model_normal.json")
+    with open("models/model_spike.pkl", "rb") as f:
+        model_spike = pickle.load(f)
 
-    model_spike = xgb.XGBRegressor()
-    model_spike.load_model("models/model_spike.json")
+    # ---- Load features ----
+    with open("models/features.pkl", "rb") as f:
+        features = pickle.load(f)
 
-    # load pickled objects
-    features = pickle.load(open("models/features.pkl", "rb"))
-    le_prod = pickle.load(open("models/le_prod.pkl", "rb"))
-    le_store = pickle.load(open("models/le_store.pkl", "rb"))
+    # ---- Load encoders ----
+    with open("models/le_prod.pkl", "rb") as f:
+        le_prod = pickle.load(f)
+
+    with open("models/le_store.pkl", "rb") as f:
+        le_store = pickle.load(f)
 
     return clf_spike, model_normal, model_spike, features, le_prod, le_store
